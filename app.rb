@@ -17,7 +17,20 @@ get('/login') do
             password_digest = BCrypt::Password.create(password)
             p password_digest
             db.execute("INSERT INTO  user(username, pwd) VALUES (?,?)", [username, password_digest])
+            redirect(:layout)
         else 
-            set_error ... -->
+            @error = "Invalid username or password"
+        end
+    end
     slim(:login)
     end
+
+get('/stories/') do
+    query = params [:q]
+    5
+end
+
+get('/clear_session')
+    session.clear
+    slim(:login)
+end
