@@ -7,8 +7,10 @@ require 'bcrypt'
 enable :session
 
     get('/') do
-        
-    
+      db=SQLite3::Database.new(".db")
+     db.results_as_hash = true
+  @stories=db.execute("SELECT * FROM story")
+  p @stories
     end
 
     get('/welcome') do
