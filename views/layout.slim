@@ -4,12 +4,23 @@ html lang="en"
         meta charset="UTF-8"/
         meta http-equiv="X-UA-Compatible" content="IE=edge"/
         meta name="viewport" content="width=device-width, initial-scale=1.0"/
+        meta name="author" content="Wilhelm Liljegren"/
+        meta time="time" content='fetched_date=Date.strptime(now, "%Y-%m-%d").to_s'/
         title Document
     body 
         header 
             h1 AITA?
         nav 
-           a href="/about" about
-           a href="/home" home
+           p 
+           a> href="/about" about
+           p
+           a> href="/home" home
+           p
+           -if !session[:user]
+               form action="/logout" method="post"
+                  button type="submit" Logout
         section
-            == yield
+              == yield if block_given?
+
+
+    

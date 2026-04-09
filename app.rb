@@ -4,56 +4,165 @@ require 'sqlite3'
 require 'sinatra/reloader'
 require 'bcrypt'
 
-enable :session
+enable :sessions
 
-    get('/') do
-      db=SQLite3::Database.new(".db")
-     db.results_as_hash = true
-  @stories=db.execute("SELECT * FROM story")
-  p @stories
+get('/') do
+    puts "Received request for root path '/'"
+    if !logged_in?
+        puts "No user logged in, redirecting to login page"
+        redirect('/login')
     end
+     query=params[:q]
+     #return "This is my landing page. Soon awesome"
 
-    get('/welcome') do
+    #   db=SQLite3::Database.new("./db/database.db")
+    #   db.results_as_hash = true
+    #    @stories=db.execute("SELECT * FROM story WHERE headline LIKE ?",
+    # ["%#{query}%"]
+    # )
+       
+    slim(:main)
+end
+
+get('/debug') do
+  db = SQLite3::Database.new("./db/database .db")
+  db.results_as_hash = true
+  db.execute("SELECT name FROM sqlite_master WHERE type='table'").inspect
+end
 
 
+def logged_in?
+  !!session[:username]
+end
+
+get ('/login') do
+  slim (:login)
+end
+
+post('/login') do
+    username = params[:username]
+    password = params[:password]
+    puts "Received login_user attempt with username: #{username} and password: #{password}"
+    if login(username, password)
+      session[:username] = username
+      puts "User #{username} logged in successfully"
+      redirect('/')
+    else
+      @error = "Invalid username or password"
+      puts "User #{ username} failed to log in"  
+      slim(:login)
     end
+end
 
+post('/logout') do
+    session.clear
+    redirect('/login')
+end
 
-    get('/login') do
-        username = params ["username"]
-        password = params ["password"]
-        password_confirmation = params ["password_confirmation"]
-        result = db.execute('SELECT * FROM user WHERE username = ?', [username])
-        
-        if result.empty?
-            if password == password_confirmation
-                password_digest = BCrypt::Password.create(password)
-                p password_digest
-                db.execute("INSERT INTO  user(username, pwd) VALUES (?,?)", [username, password_digest])
-                redirect(:layout)
-            else 
-                @error = "Invalid username or password"
-            end
-        end
-        slim(:login)
+get ('/sign_up') do 
+    slim :sign_up
+end
+
+post('/sign_up') do
+    username = params[:username]
+    password = params[:password]
+    puts "Received create_user attempt with username: #{username} and password: #{password}"
+    if create_user(username, password)
+        @success = "User created successfully! Please log in."
+        puts "User #{username} created successfully"
+        slim(:sign_up)
+    else
+        @error = "Username already exists or user is already logged in"
+        puts "Failed to create user #{username}"
+        slim(:sign_up)
     end
+end
+
+# post('/store') do
+#     session[:username] = params[:username]
+#     # redirect('/')
+# end
 
     get('/new_story') do
     slim(:new_story)
     end
 
-    post('/story') do
-        new_story = params[:new_story]
+    post('/new_story') do
         headline = params[:headline]
         content = params[:content]
         story_id = params[:story_id].to_i
         user_id = params[:user_id].to_i
-            db = SQqlite3::Database.new('db/story.db') #???
+            db = SQqlite3::Database.new('db/database.db')
             db.execute("INSERT INTO story (headline, content, story_id, user_id) VALUES (?,?,?,?)")
-            redirect(:main)
+            redirect(:story)
     end
 
-    get('/clear_session') do
-        session.clear
-        slim(:login)
+    def login(username, password)
+        puts "username = #{username}, password = #{password}"
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        result = db.execute('SELECT * FROM users WHERE username = ?', [username])
+        puts "Database query result: #{result.inspect} for username: #{username}"
+        if result.empty?
+            session.clear
+            return false
+        else
+            password_digest = result.first['pwd']
+            puts "Retrieved password digest from database: #{password_digest} for username: #{username}"
+            return BCrypt::Password.new(password_digest) == password
+        end
+    end
+
+    def create_user(username, password)
+        if logged_in?
+            puts "User #{username} is already logged in, cannot create a new user"
+            return false
+        end
+        password_digest = BCrypt::Password.create(password)
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        begin
+            db.execute('INSERT INTO users (username, pwd) VALUES (?, ?)', [username, password_digest])
+            puts "User #{username} created successfully with password digest: #{password_digest}"
+            return true
+        rescue SQLite3::ConstraintException => e
+            puts "Error creating user #{username}: #{e.message}"
+            return false
+        end
+    end
+
+    get('/story') do
+        query = params[:q]
+        puts "Received request to print stories with query: #{query}"
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        stories = db.execute('SELECT * FROM story')
+        puts "Current stories in database: #{stories.inspect}"
+
+        if query && !query.empty?
+            @stories = db.execute("SELECT * FROM story WHERE headline LIKE ?", ["%#{query}%"])
+            puts "Stories matching query '#{query}': #{@stories.inspect}"
+        else
+            @stories = db.execute("SELECT * FROM story")
+            puts "No query provided, returning all stories: #{@stories.inspect}"
+        end
+        slim(:story)
+    end
+    
+    post ('/new_story') do
+        headline = params[:headline]
+        content = params[:content]
+        user_id = params[:user_id].to_i
+        puts "Received new story submission with headline: #{headline}, content: #{content}, user_id: #{user_id}"
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        begin
+            db.execute("INSERT INTO story (headline, content, user_id) VALUES (?, ?, ?)", [headline, content, user_id])
+            puts "New story created successfully with headline: #{headline}"
+            redirect('/stories')
+        rescue SQLite3::Exception => e
+            puts "Error creating new story: #{e.message}"
+            @error = "Failed to create story. Please try again."
+            slim(:new_story)
+        end
     end

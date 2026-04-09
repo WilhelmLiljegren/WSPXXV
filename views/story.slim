@@ -1,0 +1,13 @@
+    form action="/story" method="get"
+        input name="q" placeholder="Search stories..." type="text"
+        input type="submit" value="Search!"
+     
+    h2
+      -@stories.each do |s|
+           a href='/stories/#{s["story_id"]}/edit'#{s["headline"]}
+           p Om man vill - #{s["headline"]}
+          
+           form action='/stories/#{s["story_id"]}/delete'
+            method="post" 
+            input type="submit" value="DELETE"
+    end

@@ -4,22 +4,21 @@ html
      meta charset="UTF-8"
         meta http-equiv="X-UA-Compatible" content="IE=edge"
         meta name="viewport" content="width=device-width, initial-scale=1.0"
-    title login 
+    title Sign Up 
+     body 
     body 
-    h1 Login
+    h1 Sign Up
 - if @error
     p style="color: red;"=@error
 - elsif @success 
-    p style="color: green;" Login successful!
+    p style="color: green;" Sign up successful!
 
-form action="/login" method="post"
+form action="/sign_up" method="post"
     div 
         label for="username" Username
         input type="text" name="username" placeholder="Username" required
     div 
         label for="password" Password
         input type="password" name="password" placeholder="Password" required
-    button type ="submit" login
+    button type ="submit" Sign Up
 end
-   div
-    a href="/sign_up" Sign Up

@@ -1,10 +1,10 @@
-form action="/story" method="post"
-  label for="headline" Headline
-  input type="text" name="headline" id="headline" required
+form action="/new_story" method="post"
+  label for="headline"
+  input type="text" name="headline" id="headline" placeholder="Enter headline"
 
-  label for="content" Content
-  textarea name="content" id="content" rows="5"
+  label for="content"
+  textarea name="content" id="content" rows="5" placeholder="Enter content"
 
   input type="hidden" name="user_id" value="1"
 
-  button type="submit" Save Stor
+  button type="submit" Save Story
