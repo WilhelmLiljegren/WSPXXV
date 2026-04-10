@@ -20,8 +20,8 @@ end
 def drop_tables(db)
   db.execute('DROP TABLE IF EXISTS users')
   db.execute('DROP TABLE IF EXISTS story')
+  db.execute('DROP TABLE IF EXISTS votes')
   # db.execute('DROP TABLE IF EXISTS comments')
-  # db.execute('DROP TABLE IF EXISTS votes')
 end
 
 def create_tables(db)
@@ -43,32 +43,46 @@ def create_tables(db)
   );
   SQL
 
-  # db.execute <<~SQL
-  # CREATE TABLE votes (
-  # user_id INTEGER NOT NULL,
-  # story_id INTEGER NOT NULL,
-  # value INTEGER NOT NULL,
-  # PRIMARY KEY (user_id, story_id),
-  # CHECK (value IN (1, -1)),
-  # FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-  # FOREIGN KEY (story_id) REFERENCES story(story_id) ON DELETE CASCADE
-  # );
-  # SQL
-
+  db.execute <<~SQL
+  CREATE TABLE votes (
+  user_id INTEGER NOT NULL,
+  story_id INTEGER NOT NULL,
+  value INTEGER NOT NULL,
+  PRIMARY KEY (user_id, story_id),
+  CHECK (value IN (1, -1)),
+  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  FOREIGN KEY (story_id) REFERENCES story(story_id) ON DELETE CASCADE
+  );
+  SQL
+  
+  
   # db.execute <<~SQL
   # CREATE TABLE comments(
-  # user_id INTEGER NOT NULL,
-  # story_id INTEGER NOT NULL,
-  # PRIMARY KEY (user_id, story_id),
-  # FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-  # FOREIGN KEY (story_id) REFERENCES story(story_id) ON DELETE CASCADE,
-  # comment TEXT
-  # );
-  # SQL
-end
+    # user_id INTEGER NOT NULL,
+    # story_id INTEGER NOT NULL,
+    # PRIMARY KEY (user_id, story_id),
+    # FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+    # FOREIGN KEY (story_id) REFERENCES story(story_id) ON DELETE CASCADE,
+    # comment TEXT
+    # );
+    # SQL
+  end
+  
+# db.execute <<~SQL
+#   INSERT INTO votes
+#   user_id INTEGER NOT NULL,
+#   story_id INTEGER NOT NULL,
+#   value INTEGER NOT NULL,
+#   " (user_id, story_id, value) VALUES (?, ?, ?)",
+#     [user_id, story_id, 1]) # Example of an upvote
 
-# create_indexes(db) # Fixa index för att optimera sökningar på user_id och 
-# story_id i votes och comments-tabellerna.
+#     # create_indexes(db) # Fixa index för att optimera sökningar på user_id och 
+# # story_id i votes och comments-tabellerna.
+
+# db.execute("INSERT INTO votes (user_id, story_id, value) VALUES (?, ?, ?)", [1, 1, 1]) # User 1 upvotes Story 1
+# db.execute("INSERT INTO votes (user_id, story_id, value) VALUES (?, ?, ?  )", [2, 1, -1]) # User 2 downvotes Story 1
+# db.execute("INSERT INTO votes (user_id, story_id, value) VALUES (?, ?, ?)", [user_id, story_id, value]) # User 1 upvotes Story 2
+
 
 def create_indexes(db)
   db.execute("CREATE INDEX idx_story_user_id ON story(user_id)")
@@ -87,10 +101,6 @@ def populate_tables(db)
   db.execute('INSERT INTO users (username, pwd) VALUES ("User_Z", ?)', [pwd_z_digest])
 end
 
-# db.execute(
-#   "INSERT OR REPLACE INTO votes (user_id, story_id, value) VALUES (?, ?, 1)",
-#   [user_id, story_id]
-# )
 
 def populate_stories(db)
   stories = [

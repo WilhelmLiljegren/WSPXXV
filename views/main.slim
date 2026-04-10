@@ -8,15 +8,15 @@ html
     body 
     h1 Stories
 
-/ form action="/" method = "get"
-/     input name="q" placeholder="Sök på story" type="text"
-/     input type="submit" value="Sök!"
+form action="/" method = "get"
+    input name="q" placeholder="Sök på story" type="text"
+    input type="submit" value="Sök!"
 
 
-/ - @stories.each do |story|
-/     h2
-/         a href='/stories/#{story["story_id"]}/edit'#{story["headline"]}
-/     p #{story["content"]}
+- @stories.each do |story|
+    h2
+        a href='/stories/#{story["story_id"]}/edit'#{story["headline"]}
+    p #{story["content"]}
 
-/     form action='/stories/#{story["story_id"]}/delete' method="post"
-/         input type="submit" value="DELETE"
+    form action='/stories/#{story["story_id"]}/delete' method="post"
+        input type="submit" value="DELETE"

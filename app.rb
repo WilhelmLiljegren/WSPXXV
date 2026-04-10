@@ -5,6 +5,7 @@ require 'sinatra/reloader'
 require 'bcrypt'
 
 enable :sessions
+$current_user = [nil, nil]
 
 get('/') do
     puts "Received request for root path '/'"
@@ -13,15 +14,17 @@ get('/') do
         redirect('/login')
     end
      query=params[:q]
-     #return "This is my landing page. Soon awesome"
 
-    #   db=SQLite3::Database.new("./db/database.db")
-    #   db.results_as_hash = true
-    #    @stories=db.execute("SELECT * FROM story WHERE headline LIKE ?",
-    # ["%#{query}%"]
-    # )
+      db=SQLite3::Database.new("./db/database.db")
+      db.results_as_hash = true
+      @stories=db.execute("SELECT * FROM story WHERE headline LIKE ?",
+      ["%#{query}%"])
        
     slim(:main)
+end
+
+get('/about') do
+    slim(:about)
 end
 
 get('/debug') do
@@ -90,10 +93,10 @@ end
     post('/new_story') do
         headline = params[:headline]
         content = params[:content]
-        story_id = params[:story_id].to_i
-        user_id = params[:user_id].to_i
-            db = SQqlite3::Database.new('db/database.db')
-            db.execute("INSERT INTO story (headline, content, story_id, user_id) VALUES (?,?,?,?)")
+        user_id = $current_user[1]
+        puts "Received new story submission with headline: #{headline}, content: #{content}, user_id: #{user_id}"
+            db = SQLite3::Database.new('db/database.db')
+            db.execute("INSERT INTO story (headline, content, user_id) VALUES (?,?,?)", [headline, content, user_id])
             redirect(:story)
     end
 
@@ -108,6 +111,9 @@ end
             return false
         else
             password_digest = result.first['pwd']
+            userid = result.first['user_id'].to_i
+            $current_user = [username, userid]
+            puts "Set $current_user to: #{$current_user.inspect} $current_user[0] = #{ $current_user[0]}, $current_user[1] = #{ $current_user[1]}"
             puts "Retrieved password digest from database: #{password_digest} for username: #{username}"
             return BCrypt::Password.new(password_digest) == password
         end
@@ -152,7 +158,7 @@ end
     post ('/new_story') do
         headline = params[:headline]
         content = params[:content]
-        user_id = params[:user_id].to_i
+        user_id = currentuser[1]
         puts "Received new story submission with headline: #{headline}, content: #{content}, user_id: #{user_id}"
         db = SQLite3::Database.new('db/database.db')
         db.results_as_hash = true
@@ -164,5 +170,29 @@ end
             puts "Error creating new story: #{e.message}"
             @error = "Failed to create story. Please try again."
             slim(:new_story)
+        end
+    end
+
+    get('/vote') do
+        story_id = params[:story_id]
+        vote_value = params[:vote_value].to_i
+        # if $current_user[0] == nil
+        #     puts "No user logged in, cannot record vote"
+        #     @error = "You must be logged in to vote"
+        #     redirect('/stories')
+        # end
+        user_id = $current_user[1]
+        p "#{$current_user[1]}"
+        puts "Received vote with story_id: #{story_id}, vote_value: #{vote_value}, user_id: #{user_id}"
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        begin
+            db.execute("INSERT INTO votes (user_id, story_id, value) VALUES (?, ?, ?) ON CONFLICT(user_id, story_id) DO UPDATE SET value = excluded.value", [user_id, story_id, vote_value])
+            puts "Vote recorded successfully for story_id: #{story_id} with value: #{vote_value}"
+            redirect('/stories')
+        rescue SQLite3::Exception => e
+            puts "Error recording vote: #{e.message}"
+            @error = "Failed to record vote. Please try again."
+            redirect('/stories')
         end
     end

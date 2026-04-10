@@ -1,0 +1,25 @@
+.vote-container
+  h1 Votes
+  
+  .vote-list
+    - if @votes.any?
+      table.votes-table
+        thead
+          tr
+            th ID
+            th Option
+            th Count
+            th Percentage
+        tbody
+          - @votes.each do |vote|
+            tr
+              td = vote.id
+              td = vote.option
+              td = vote.count
+              td = "#{vote.percentage}%"
+    - else
+      p No votes yet.
+  
+  .vote-actions
+    = button_to "Add Vote", new_vote_path, method: :get
+    = button_to "Refresh", vote_path, method: :get
