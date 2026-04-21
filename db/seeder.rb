@@ -45,17 +45,14 @@ def create_tables(db)
 
   db.execute <<~SQL
   CREATE TABLE votes (
-  user_id INTEGER NOT NULL,
   story_id INTEGER NOT NULL,
-  value INTEGER NOT NULL,
-  PRIMARY KEY (user_id, story_id),
-  CHECK (value IN (1, -1)),
-  FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+  user_id TEXT DEFAULT NULL,
+  value INTEGER DEFAULT 0,
+  PRIMARY KEY (story_id),
   FOREIGN KEY (story_id) REFERENCES story(story_id) ON DELETE CASCADE
   );
   SQL
-  
-  
+
   # db.execute <<~SQL
   # CREATE TABLE comments(
     # user_id INTEGER NOT NULL,
@@ -68,11 +65,12 @@ def create_tables(db)
     # SQL
   end
   
+
 # db.execute <<~SQL
 #   INSERT INTO votes
 #   user_id INTEGER NOT NULL,
 #   story_id INTEGER NOT NULL,
-#   value INTEGER NOT NULL,
+#   value INTEGER DEFAULT 0,
 #   " (user_id, story_id, value) VALUES (?, ?, ?)",
 #     [user_id, story_id, 1]) # Example of an upvote
 
@@ -111,6 +109,8 @@ def populate_stories(db)
 
   stories.each do |st|
     db.execute("INSERT INTO story (headline, content, user_id) VALUES (?,?,?)", st)
+    id = db.execute("SELECT story_id FROM story WHERE headline LIKE ?", [st[0]]).first['story_id']
+    db.execute("INSERT INTO votes (story_id, user_id, value) VALUES (?,?,?)", [id, 0, 0])
   end
 end
 

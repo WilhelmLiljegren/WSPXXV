@@ -11,16 +11,40 @@ html lang="en"
         header 
             h1 AITA?
         nav 
-           p 
-           a> href="/about" about
-           p
-           a> href="/" home
-           p
-           -if !session[:user]
-               form action="/logout" method="post"
-                  button type="submit" Logout
+           table 
+             tr
+               td 
+                 a href="/about" about
+               td
+                 a href="/" home
+               td
+                    a href="/story" stories
+               td
+                    a href="/new_story" new story
+               td
+                    a href="/vote" votes
+                
+               td 
+                 -if !!session[:username]
+                    form action="/logout" method="post"
+                        button type="submit" Logout
         section
               == yield if block_given?
+        footer 
+            p &copy; 2026 AITA? All rights reserved author: Wilhelm Liljegren
 
 
     
+css:
+  table, th, td {
+    border: 1px solid grey;
+    border-collapse: collapse;
+  }
+  th, td {
+    padding: 10px;
+    empty-cells: hide;
+  }
+  
+  td:empty, th:empty, .empty-cell { 
+    diplay: none;
+  }   

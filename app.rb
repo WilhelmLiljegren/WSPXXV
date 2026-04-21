@@ -3,6 +3,7 @@ require 'slim'
 require 'sqlite3'
 require 'sinatra/reloader'
 require 'bcrypt'
+require 'json'
 
 enable :sessions
 $current_user = [nil, nil]
@@ -74,6 +75,13 @@ post('/sign_up') do
         @success = "User created successfully! Please log in."
         puts "User #{username} created successfully"
         slim(:sign_up)
+        if login(username, password)
+            puts "User #{username} logged in successfully after sign up"
+            redirect('/')
+        else
+            @error = "Failed to log in after sign up"
+            redirect('/login')
+        end
     else
         @error = "Username already exists or user is already logged in"
         puts "Failed to create user #{username}"
@@ -87,10 +95,16 @@ end
 # end
 
     get('/new_story') do
-    slim(:new_story)
+        if !logged_in? # Ensure the user is logged in before allowing story creation
+          redirect('/login')
+        end
+        slim(:new_story)
     end
 
     post('/new_story') do
+        if !logged_in? # Ensure the user is logged in before allowing story creation
+        redirect('/login')
+        end
         headline = params[:headline]
         content = params[:content]
         user_id = $current_user[1]
@@ -138,6 +152,7 @@ end
     end
 
     get('/story') do
+        logged_in_check # Ensure the user is logged in before allowing access to stories
         query = params[:q]
         puts "Received request to print stories with query: #{query}"
         db = SQLite3::Database.new('db/database.db')
@@ -156,6 +171,7 @@ end
     end
     
     post ('/new_story') do
+        logged_in_check # Ensure the user is logged in before allowing story creation
         headline = params[:headline]
         content = params[:content]
         user_id = currentuser[1]
@@ -174,25 +190,78 @@ end
     end
 
     get('/vote') do
-        story_id = params[:story_id]
-        vote_value = params[:vote_value].to_i
-        # if $current_user[0] == nil
-        #     puts "No user logged in, cannot record vote"
-        #     @error = "You must be logged in to vote"
+        logged_in_check
+        # story_id = params[:story_id]
+        # vote_value = params[:vote_value].to_i
+        user_id = $current_user[1]
+        p "user_id- #{$current_user[1]}"
+        # puts "Received vote with story_id: #{story_id}, vote_value: #{vote_value}, user_id: #{user_id}"
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        @stories = db.execute('SELECT * FROM story')
+        @votes = db.execute('SELECT * FROM votes')
+
+        puts "Current votes in database: #{@votes.inspect}"
+        slim(:vote)
+    end
+        # begin
+        #     db.execute("INSERT INTO votes (user_id, story_id, value) VALUES (?, ?, ?) ON CONFLICT(user_id, story_id) DO UPDATE SET value = excluded.value", [user_id, story_id, vote_value])
+        #     puts "Vote recorded successfully for story_id: #{story_id} with value: #{vote_value}"
+        #     redirect('/stories')
+        # rescue SQLite3::Exception => e
+        #     puts "Error recording vote: #{e.message}"
+        #     @error = "Failed to record vote. Please try again."
         #     redirect('/stories')
         # end
-        user_id = $current_user[1]
-        p "#{$current_user[1]}"
-        puts "Received vote with story_id: #{story_id}, vote_value: #{vote_value}, user_id: #{user_id}"
+    # end
+
+    def logged_in_check
+        if !logged_in?
+            puts "No user logged in, redirecting to login page"
+            redirect('/login')
+        end
+        
+    end
+
+    post('/vote/:story_id/upvote') do
+        p "Received upvote for story_id: #{params[:story_id]}"
         db = SQLite3::Database.new('db/database.db')
         db.results_as_hash = true
         begin
-            db.execute("INSERT INTO votes (user_id, story_id, value) VALUES (?, ?, ?) ON CONFLICT(user_id, story_id) DO UPDATE SET value = excluded.value", [user_id, story_id, vote_value])
-            puts "Vote recorded successfully for story_id: #{story_id} with value: #{vote_value}"
-            redirect('/stories')
+          row = db.get_first_row("SELECT user_id FROM votes WHERE story_id = ?", [params[:story_id]])
+          if(!(row.values[0].count($current_user[1].to_s) > 0))
+            usr_ids = row.values ? row.values : [] # Convert the string of user_ids to an array, or initialize an empty array if it's nil
+            usr_ids.delete('0') # Remove the default '0' value if it exists
+            usr_ids << $current_user[1] # Add the current user's ID to the array
+            db.execute("UPDATE votes SET user_id = ? WHERE story_id = ?", [usr_ids.join(","), params[:story_id]])
+            db.execute("UPDATE votes SET value = value + 1 WHERE story_id = ?", [params[:story_id]])
+          else
+            p "User has already voted on this story, skipping vote update"
+          end
         rescue SQLite3::Exception => e
-            puts "Error recording vote: #{e.message}"
-            @error = "Failed to record vote. Please try again."
-            redirect('/stories')
+          puts "Error updating vote: #{e.message}"
         end
+        
+        redirect "/vote"
+    end
+
+    post('/my_vote/:story_id/downvote') do
+        p "Received downvote for story_id: #{params[:story_id]}"
+        db = SQLite3::Database.new('db/database.db')
+        db.results_as_hash = true
+        begin
+          row = db.get_first_row("SELECT user_id FROM votes WHERE story_id = ?", [params[:story_id]])
+          if(!(row.values[0].count($current_user[1].to_s) > 0))
+            usr_ids = row.values ? row.values : [] # Convert the string of user_ids to an array, or initialize an empty array if it's nil
+            usr_ids.delete('0') # Remove the default '0' value if it exists
+            usr_ids << $current_user[1] # Add the current user's ID to the array
+            db.execute("UPDATE votes SET user_id = ? WHERE story_id = ?", [usr_ids.join(","), params[:story_id]])
+            db.execute("UPDATE votes SET value = value - 1 WHERE story_id = ?", [params[:story_id]])
+          else
+            p "User has already voted on this story, skipping vote update"
+          end
+        rescue SQLite3::Exception => e
+          puts "Error updating vote: #{e.message}"
+        end
+        redirect "/vote"
     end

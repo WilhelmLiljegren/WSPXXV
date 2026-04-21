@@ -14,12 +14,13 @@ html
 
 form action="/login" method="post"
     div 
-        label for="username" Username
-        input type="text" name="username" placeholder="Username" required
+        label for="username"
+        input type="text" name="username" placeholder="Username" style="margin: 5px;"
     div 
-        label for="password" Password
-        input type="password" name="password" placeholder="Password" required
-    button type ="submit" login
+        label for="password"
+        input type="password" name="password" placeholder="Password" style="margin: 5px;"
+
+    div
+       button type ="submit" login
+       a href="/sign_up" <button>Sign up</button> 
 end
-   div
-    a href="/sign_up" Sign Up

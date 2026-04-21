@@ -2,12 +2,32 @@
         input name="q" placeholder="Search stories..." type="text"
         input type="submit" value="Search!"
      
-    h2
-      -@stories.each do |s|
-           a href='/stories/#{s["story_id"]}/edit'#{s["headline"]}
-           p Om man vill - #{s["headline"]}
+    table 
+        thead
+            tr
+            th Story ID
+            th Headline
+            th Content
+            th Edit
+            th Delete
+        tbody
+            - if @stories.any?
+            - @stories.each do |s|
+                tr
+                td = s["story_id"]
+                td = s["headline"]
+                td = s["content"]
+                td 
+                    a href='/stories/#{s["story_id"]}/edit' Edit
+                td   
+                    form action='/stories/#{s["story_id"]}/delete' method="post" style="display:inline"
+                         button type="submit" DELETE
+            end
+    /   -@stories.each do |s| 
+    /        a href='/stories/#{s["story_id"]}/edit'#{s["headline"]}
+    /        p Om man vill - #{s["headline"]}
           
-           form action='/stories/#{s["story_id"]}/delete'
-            method="post" 
-            input type="submit" value="DELETE"
-    end
+    /        form action='/stories/#{s["story_id"]}/delete'
+    /         method="post" 
+    /         input type="submit" value="DELETE"
+    / end

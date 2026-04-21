@@ -1,25 +1,38 @@
 .vote-container
   h1 Votes
-  
+  .story-list
+    - if @stories.any?
+      table.stories-table
+        thead
+          tr
+            th Story ID
+            th Headline
+            th Content
+        tbody
+          - @stories.each do |s|
+            tr
+              td = s["story_id"]
+              td = s["headline"]
+              td = s["content"]
   .vote-list
     - if @votes.any?
       table.votes-table
         thead
           tr
-            th ID
-            th Option
+            th User ID
+            th Story ID
             th Count
-            th Percentage
+            th Up/Down vote
         tbody
-          - @votes.each do |vote|
+          - @votes.each do |vt|
             tr
-              td = vote.id
-              td = vote.option
-              td = vote.count
-              td = "#{vote.percentage}%"
-    - else
-      p No votes yet.
-  
-  .vote-actions
-    = button_to "Add Vote", new_vote_path, method: :get
-    = button_to "Refresh", vote_path, method: :get
+              td = vt["user_id"]
+              td = vt["story_id"]
+              td = vt["value"]
+              td 
+                form action="/vote/#{vt["story_id"]}/upvote" method="post" style="display:inline"
+                     button type="submit" ⬆ Up
+
+                form action="/my_vote/#{vt["story_id"]}/downvote" method="post" style="display:inline"
+                     button type="submit" ⬇ Down
+
