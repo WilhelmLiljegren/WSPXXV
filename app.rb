@@ -181,6 +181,8 @@ end
         begin
             db.execute("INSERT INTO story (headline, content, user_id) VALUES (?, ?, ?)", [headline, content, user_id])
             puts "New story created successfully with headline: #{headline}"
+            id = db.execute("SELECT story_id FROM story WHERE headline LIKE ?", [st[0]]).first['story_id']
+            db.execute("INSERT INTO votes (story_id, user_id, value) VALUES (?,?,?)", [id, 0, 0])
             redirect('/stories')
         rescue SQLite3::Exception => e
             puts "Error creating new story: #{e.message}"
